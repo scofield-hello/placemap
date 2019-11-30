@@ -4,9 +4,12 @@ from typing import List, Dict
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.remote.webelement import WebElement
+import platform
 
 __settings: Dict = None
 __chrome_driver = None
+__page_pattern = "<b>Found: ([0-9,]{1,10}) Places, ([0-9,]{1,10}) Pages</b>"
+__p_xpath = '//div[@class="six columns"]/p'
 
 
 def start_crawl(**settings) -> None:
@@ -15,16 +18,54 @@ def start_crawl(**settings) -> None:
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     placemap_url = "https://placesmap.net/"
-    __chrome_driver = webdriver.Chrome(executable_path="chromedriver.exe",
+    driver_path = "chromedriver.exe"
+    if platform.system() == "Darwin":
+        driver_path = "/Users/Nick/Dev/Python-In-Action/placemap/chromedriver"
+    __chrome_driver = webdriver.Chrome(executable_path=driver_path,
                                        options=chrome_options)
+    __chrome_driver.set_page_load_timeout(30)
     __chrome_driver.get(placemap_url)
     country_name = __settings["COUNTRY_NAME"]
     href = __parse_country_href(__chrome_driver, country_name)
     print(f"提取{country_name}信息链接地址:{href}")
-    __chrome_driver.get(href)
     for city_name in __settings["CITY_LIST"]:
-        __parse_city_href(__chrome_driver.page_source, city_name)
-    # \s<a href=".*">Aba</a>
+        city_href = __build_city_href(href, city_name)
+        print(f"提取{city_name}信息链接地址:{city_href}")
+        __chrome_driver.get(city_href)
+        for pattern in __settings["MATCHES"]:
+            target_href = str(pattern).lower().replace(" ", "-")
+            if pattern not in __chrome_driver.page_source:
+                print(f"没有找到目标链接:{pattern}")
+                continue
+            target_href = city_href + target_href
+            print(f"目标信息链接:{target_href}")
+            __chrome_driver.get(target_href)
+            match = re.search(__page_pattern, __chrome_driver.page_source)
+            if match == None:
+                continue
+            page_size = int(match.group(2))
+            print(f"page size: {page_size}")
+            for page_num in range(1, page_size + 1):
+                page_href = target_href + f"/{page_num}/"
+                print(f"页面链接:{page_href}")
+                __chrome_driver.get(page_href)
+                p_el_list: List[
+                    WebElement] = __chrome_driver.find_elements_by_xpath(
+                        __p_xpath)
+                for p_el in p_el_list:
+                    if str(p_el.text).strip() == '':
+                        continue
+                    title = p_el.find_element_by_xpath("./b/a").text
+                    cordinate = p_el.find_element_by_xpath("./a").text
+                    detail_list = str(p_el.text).split("\n")
+                    address = detail_list[1]
+                    detail = detail_list[3] if len(detail_list) == 4 else None
+                    print(f"""
+                    {title}
+                    {address}
+                    {cordinate}
+                    {detail}
+                    """)
 
 
 def __parse_country_href(chrome_driver, country_name) -> str:
@@ -38,35 +79,7 @@ def __parse_country_href(chrome_driver, country_name) -> str:
     return country_el.get_attribute("href")
 
 
-def __parse_city_href(page_source, city_name) -> str:
-    city_pattern = r"""\s<a href=\".*?\">%s</a>""" % city_name
-    match = re.search(pattern=city_pattern, string=page_source)
-    if match == None:
-        print(f"没有找到指定城市信息: {city_name}")
-    a_el = match.group(0)
-    print(a_el)
-
-
-#     chrome_driver.get(placemap_url)
-
-# if __name__ == "__main__":
-#     administration_areas = HUNGARY_CITY_LIST
-#     chrome_options = Options()
-#     chrome_options.add_argument("--headless")
-#     placemap_url = "https://placesmap.net/"
-#     chrome_driver = webdriver.Chrome(executable_path="chromedriver.exe",
-#                                      options=chrome_options)
-#     chrome_driver.get(placemap_url)
-#     all_country_alist: List[
-#         WebElement] = chrome_driver.find_elements_by_tag_name("a")
-#     country_name = "Hungary"
-#     country_alist: List[WebElement] = list(
-#         filter(lambda a: a.text == country_name, all_country_alist))
-#     if len(country_alist) == 0:
-#         print("未找到国家信息")
-#     country_el = country_alist[0]
-#     country_href = country_el.get_attribute("href")
-#     print(f"国家页面链接:{country_href}")
-#     chrome_driver.get(country_href)
-
-# for administration_area in administration_areas:
+def __build_city_href(href, city_name) -> str:
+    f_city_name = city_name.replace(" ", "-")
+    city_href = f"{href}{f_city_name}/"
+    return city_href
