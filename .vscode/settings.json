@@ -1,0 +1,8 @@
+{
+    "python.pythonPath": "C:\\Users\\Nickey\\.virtualenvs\\placemap-AtCwTO7d\\Scripts\\python.exe",
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true,
+    "python.formatting.provider": "yapf",
+    "editor.formatOnSave": true,
+    "cSpell.enabled": false,
+}
