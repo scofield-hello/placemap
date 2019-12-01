@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 import os, time, re
-from typing import List, Dict, NewType, Tuple
+from typing import List, Dict, NewType, Tuple, Optional
 from selenium import webdriver
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.chrome.options import Options
@@ -9,9 +9,13 @@ import platform
 
 Country = NewType("Country", Tuple[str, str])
 Area = NewType("Area", Tuple[str, str])
+Position = NewType("Position", Tuple[str, str, str, Optional[str],
+                                     Optional[str]])
 __chrome_driver: WebDriver = None
 __page_pattern = "<b>Found: ([0-9,]{1,10}) Places, ([0-9,]{1,10}) Pages</b>"
 __p_xpath = '//div[@class="six columns"]/p'
+__phone_pattern = r"Phone:\s?([+0-9\s]{3,30})"
+__web_pattern = r"\((.*?)\)"
 
 
 def start_crawl(**settings) -> None:
@@ -68,13 +72,14 @@ def start_crawl(**settings) -> None:
                         detail_list = str(p_el.text).split("\n")
                         address = detail_list[1]
                         detail = detail_list[3] if len(
-                            detail_list) == 4 else None
-                        print(f"""
-                        {title}
-                        {address}
-                        {cordinate}
-                        {detail}
-                        """)
+                            detail_list) == 4 else ""
+                        match_p = re.search(__phone_pattern, detail)
+                        match_w = re.search(__web_pattern, detail)
+                        phone = "" if not match_p else match_p.group(1).strip()
+                        web = "" if not match_w else match_w.group(1).strip()
+                        position: Position = (title, address, cordinate, phone,
+                                              web)
+                        print("\n".join(position))
 
 
 def __parse_country_list(chrome_driver: WebDriver,
