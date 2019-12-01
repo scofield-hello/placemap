@@ -9,8 +9,7 @@ import platform
 
 Country = NewType("Country", Tuple[str, str])
 Area = NewType("Area", Tuple[str, str])
-Position = NewType("Position", Tuple[str, str, str, Optional[str],
-                                     Optional[str]])
+Position = NewType("Position", Tuple[str, str, str, str, str])
 __chrome_driver: WebDriver = None
 __page_pattern = "<b>Found: ([0-9,]{1,10}) Places, ([0-9,]{1,10}) Pages</b>"
 __p_xpath = '//div[@class="six columns"]/p'
