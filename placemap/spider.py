@@ -56,28 +56,10 @@ def start_crawl(**settings) -> None:
                 page_size = int(match.group(2))
                 print(f"地区[{area_name}] 共有 [{pattern}] 信息 [{page_size}] 页 ")
                 for page_num in range(1, page_size + 1):
-                    page_href = target_href + f"/{page_num}/"
-                    print(f"页面链接:{page_href}")
-                    __chrome_driver.get(page_href)
-                    p_el_list: List[
-                        WebElement] = __chrome_driver.find_elements_by_xpath(
-                            __p_xpath)
-                    p_el_list = list(
-                        filter(lambda el: str(el.text).strip() != '',
-                               p_el_list))
+                    p_el_list = __parse_taget_list(__chrome_driver,
+                                                   target_href, page_num)
                     for p_el in p_el_list:
-                        title = p_el.find_element_by_xpath("./b/a").text
-                        cordinate = p_el.find_element_by_xpath("./a").text
-                        detail_list = str(p_el.text).split("\n")
-                        address = detail_list[1]
-                        detail = detail_list[3] if len(
-                            detail_list) == 4 else ""
-                        match_p = re.search(__phone_pattern, detail)
-                        match_w = re.search(__web_pattern, detail)
-                        phone = "" if not match_p else match_p.group(1).strip()
-                        web = "" if not match_w else match_w.group(1).strip()
-                        position: Position = (title, address, cordinate, phone,
-                                              web)
+                        position = __parse_position(p_el)
                         print("\n".join(position))
 
 
@@ -99,3 +81,26 @@ def __parse_area_list(chrome_driver: WebDriver) -> List[Area]:
         '//div[@class="four columns"]/a')
     return list(
         map(lambda el: (el.text, el.get_attribute("href")), area_el_list))
+
+
+def __parse_position(p_el: WebElement) -> Position:
+    title = p_el.find_element_by_xpath("./b/a").text
+    cordinate = p_el.find_element_by_xpath("./a").text
+    detail_list = str(p_el.text).split("\n")
+    address = detail_list[1]
+    detail = detail_list[3] if len(detail_list) == 4 else ""
+    match_p = re.search(__phone_pattern, detail)
+    match_w = re.search(__web_pattern, detail)
+    phone = "" if not match_p else match_p.group(1).strip()
+    web = "" if not match_w else match_w.group(1).strip()
+    return (title, address, cordinate, phone, web)
+
+
+def __parse_taget_list(chrome_driver: WebDriver, target_href: str,
+                       page_num: int) -> List[WebElement]:
+    page_href = target_href + f"/{page_num}/"
+    print(f"页面链接:{page_href}")
+    chrome_driver.get(page_href)
+    p_el_list: List[WebElement] = chrome_driver.find_elements_by_xpath(
+        __p_xpath)
+    return list(filter(lambda el: str(el.text).strip() != '', p_el_list))
