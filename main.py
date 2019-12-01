@@ -1,12 +1,10 @@
 # -*- coding:utf-8 -*-
 import sys
-from placemap.settings import countrys
-from placemap import spider
+from placemap import settings, spider
 
 if __name__ == "__main__":
-    country_name = "Serbia"
     try:
-        settings = countrys[country_name]
-        spider.start_crawl(**settings)
+        config = settings.config
+        spider.start_crawl(**config)
     except:
         print(sys.exc_info())
