@@ -1,8 +1,9 @@
 # -*- coding:utf-8 -*-
 
 config = {
-    "COUNTRY_LIST": ["Greece", "Hungary", "Sri Lanka", "Serbia"],
-    "MATCHES": ["Local Government Office", "Police"],
+    "COUNTRY": ["Sri Lanka", "Greece", "Hungary", "Serbia"],
+    "MATCHE": ["Local Government Office", "Police"],
+    "COLUMN": ["名称", "地址", "纬度", "经度", "电话", "网址"]
 }
 
 # countrys = {
