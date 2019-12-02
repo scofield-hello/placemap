@@ -11,9 +11,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.remote.webelement import WebElement
-from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment
-from openpyxl.styles.colors import BLACK
+from openpyxl import Workbook, load_workbook
 
 Country = NewType("Country", Tuple[str, str])
 Area = NewType("Area", Tuple[str, str])
@@ -49,7 +47,6 @@ def __init_crawl_job(countrys: List[str], matches: List[str]) -> None:
                                          options=chrome_options)
         chrome_driver.set_page_load_timeout(90)
         chrome_driver.set_script_timeout(5)
-        chrome_driver.error_handler
         chrome_driver.get(placemap_url)
         country_list: List[Country] = __parse_country_list(
             chrome_driver, countrys)
@@ -150,14 +147,19 @@ def __parse_taget_list(chrome_driver: WebDriver, target_href: str,
 
 def __init_xls(country_list: List[str], columns: List[str]) -> Workbook:
     print("正在初始化表格...")
-    workbook = Workbook()
-    workbook.remove(workbook.get_active_sheet())
-    for country_name in country_list:
-        worksheet = workbook.create_sheet(country_name)
-        worksheet.sheet_properties.tabColor = '6FB7B7'
-        for xls_col in worksheet.iter_cols(max_col=len(columns), max_row=1):
-            for cell in xls_col:
-                cell.value = columns[cell.col_idx - 1]
+    workbook = None
+    if os.path.exists("./四国政府机构数据.xlsx"):
+        workbook = load_workbook('./四国政府机构数据.xlsx')
+    else:
+        workbook = Workbook()
+        workbook.remove(workbook.get_active_sheet())
+        for country_name in country_list:
+            worksheet = workbook.create_sheet(country_name)
+            worksheet.sheet_properties.tabColor = '6FB7B7'
+            for xls_col in worksheet.iter_cols(max_col=len(columns),
+                                               max_row=1):
+                for cell in xls_col:
+                    cell.value = columns[cell.col_idx - 1]
     return workbook
 
 
